@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from nn.process import Result
 
 class Plotter:
     def __init__(self):
@@ -47,4 +48,41 @@ class Plotter:
         cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         return image
 
-    
+    def plot_results(self, img_ori: np.ndarray, result:Result) -> np.ndarray:
+        """
+        Dibuja las detecciones (cajas, clases y keypoints) en la imagen original.
+        
+        :param img_ori: Imagen original (np.ndarray)
+        :param result: Objeto Result con boxes, keypoints y clases
+        :return: Imagen con los resultados dibujados
+        """
+        img = img_ori.copy()
+        
+        if result.boxs is None or result.boxs.xyxy is None:return img
+
+        for i, box in enumerate(result.boxs.xyxy):
+            conf = result.boxs.conf[i] if result.boxs.conf is not None else 0
+            cls_id = int(result.classess.classes[i]) if result.classess is not None else -1
+
+            # Dibujar la caja
+            img = self.draw_rectangle(box, img)
+
+            # Texto con clase y confianza
+            label = f"{cls_id}: {conf:.2f}"
+            x1, y1, _, _ = box
+            cv2.putText(img, label, (int(x1), int(y1) - 5),1,1,(255,255,255),1)
+
+            # Si hay keypoints, dibujar esqueleto
+            if result.kpts is not None and result.kpts.xy is not None:
+                kpts = result.kpts.xy[i]
+                confs = result.kpts.conf[i]
+
+                # Dibujar conexiones del esqueleto
+                img = self.draw_lines(kpts, img)
+
+                # Dibujar puntos individuales
+                for (x, y), c in zip(kpts, confs):
+                    if c > 0.5:  # sólo puntos con confianza alta
+                        cv2.circle(img, (int(x), int(y)), 3, (255, 255, 255), -1)
+
+        return img

@@ -4,8 +4,8 @@ import numpy as np
 from nn.model import Model
 
 class ModelOnnx(Model):
-    def __init__(self, path_model):
-        super().__init__(path_model)
+    def __init__(self, path_model,score=0.7):
+        super().__init__(path_model,score)
 
     def init_model(self):
         providers = ['CPUExecutionProvider']
